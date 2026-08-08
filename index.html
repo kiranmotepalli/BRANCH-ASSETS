@@ -146,16 +146,18 @@ textarea{ min-height:60px; resize:vertical; }
   box-shadow:0 0 0 2000px rgba(0,0,0,0.35); pointer-events:none;
 }
 .scanner-laser{
-  position:absolute; left:10%; right:10%; top:16%; height:2px; z-index:2;
+  position:absolute; left:11%; right:11%; top:18%; height:2px; z-index:2;
   background:linear-gradient(90deg, transparent, #ff3b3b 15%, #ff3b3b 85%, transparent);
   box-shadow:0 0 6px 2px rgba(255,59,59,0.75), 0 0 14px 4px rgba(255,59,59,0.35);
   pointer-events:none;
-  animation: scannerLaserMove 1.7s ease-in-out infinite;
+  animation: scannerLaserMove 3.2s ease-in-out infinite;
 }
 @keyframes scannerLaserMove{
-  0%   { top:17%; opacity:0.9; }
-  50%  { top:83%; opacity:0.9; }
-  100% { top:17%; opacity:0.9; }
+  0%   { top:18%; opacity:0.9; }
+  8%   { opacity:0.9; }
+  50%  { top:82%; opacity:0.9; }
+  92%  { opacity:0.9; }
+  100% { top:18%; opacity:0.9; }
 }
 
 .toast{
