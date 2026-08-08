@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#14161C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>ASSETLINE Collector</title>
+<style>
+:root{
+  --bg:#14161C; --panel:#191c24; --panel-2:#1f232c; --border:#2a2f3a;
+  --text:#e8eaf0; --text-dim:#9aa0ae; --text-faint:#676d7c;
+  --amber:#f0a63d; --amber-dim:#4d3a1c; --teal:#35d0b0; --teal-dim:#123a33;
+  --red:#ef6a6a; --red-dim:#3d1f22;
+  --mono: ui-monospace, "SFMono-Regular", "Roboto Mono", Menlo, monospace;
+  --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{ height:100%; }
+body{
+  background:var(--bg); color:var(--text); font-family:var(--sans); font-size:15px;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom,0px));
+  padding-top: env(safe-area-inset-top,0px);
+}
+header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 18px 12px 18px; border-bottom:1px solid var(--border);
+  position:sticky; top:0; background:var(--bg); z-index:10;
+}
+.brand{ display:flex; align-items:center; gap:10px; }
+.brand-mark{ width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,var(--amber),#c97f1e); display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-weight:700; font-size:13px; color:#1a1300; flex-shrink:0; }
+.brand-text .t1{ font-weight:800; font-size:15.5px; }
+.brand-text .t2{ font-size:10px; color:var(--text-faint); font-family:var(--mono); letter-spacing:0.04em; }
+.sync-badge{ font-family:var(--mono); font-size:11px; color:var(--text-dim); background:var(--panel-2); border:1px solid var(--border); padding:4px 9px; border-radius:20px; }
+.sync-badge.offline{ color:var(--red); border-color:#5a2a2a; }
+
+main{ padding: 16px; max-width:560px; margin:0 auto; }
+.view{ display:none; }
+.view.active{ display:block; }
+
+.panel{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px; }
+.section-title{ font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-faint); font-weight:700; margin-bottom:10px; }
+
+label{ display:block; font-size:12px; color:var(--text-dim); font-weight:600; margin:12px 0 6px 0; }
+label:first-child{ margin-top:0; }
+input, select, textarea{
+  width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+  padding:11px 12px; border-radius:8px; font-size:15px; font-family:var(--sans); outline:none;
+}
+input:focus, select:focus, textarea:focus{ border-color:var(--amber); }
+textarea{ min-height:60px; resize:vertical; }
+.row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.hint{ font-size:11px; color:var(--text-faint); margin-top:6px; line-height:1.5; }
+
+.btn{
+  width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+  padding:13px; border-radius:9px; font-size:15px; font-weight:700; cursor:pointer; margin-top:14px;
+}
+.btn.primary{ background:var(--amber); color:#1a1300; border-color:var(--amber); }
+.btn.ghost{ background:transparent; }
+.btn.danger{ border-color:var(--red); color:var(--red); }
+.btn.small{ width:auto; padding:8px 14px; font-size:12.5px; margin-top:0; }
+.btn-row{ display:flex; gap:10px; margin-top:14px; }
+.btn-row .btn{ margin-top:0; width:auto; }
+.btn-row .btn.ghost{ flex:0 0 auto; padding:13px 20px; border-color:var(--border); }
+.btn-row .btn.primary{ flex:1; }
+
+.entry-card{ background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:13px 14px; margin-bottom:10px; }
+.branch-group{ margin-bottom:16px; }
+.branch-group-head{
+  display:flex; align-items:center; gap:9px; cursor:pointer; user-select:none;
+  padding:10px 12px; background:var(--panel); border:1px solid var(--border);
+  border-radius:9px; margin-bottom:10px;
+}
+.branch-group-head .chev{ color:var(--text-faint); font-size:11px; width:10px; flex-shrink:0; }
+.branch-group-count{ margin-left:auto; font-family:var(--mono); font-size:10.5px; color:var(--text-faint); white-space:nowrap; }
+.branch-group-body{ padding-left:4px; }
+.entry-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.entry-name{ font-weight:700; font-size:14.5px; }
+.entry-meta{ font-size:12px; color:var(--text-dim); margin-top:3px; line-height:1.5; }
+.entry-tag{ font-family:var(--mono); font-size:9.5px; color:var(--amber); background:var(--amber-dim); padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px; }
+.pill{ display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:700; white-space:nowrap; flex-shrink:0; }
+.pill.working{ background:var(--teal-dim); color:var(--teal); }
+.pill.bad{ background:var(--red-dim); color:var(--red); }
+.pill .d{ width:5px; height:5px; border-radius:50%; background:currentColor; }
+.entry-actions{ display:flex; gap:8px; margin-top:10px; }
+.icon-btn{ background:transparent; border:1px solid var(--border); color:var(--text-dim); padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; }
+.icon-btn.danger{ color:var(--red); border-color:#5a2a2a; }
+
+.search-row{ display:flex; gap:8px; margin-bottom:12px; }
+.search-row input{ flex:1; }
+
+.empty{ text-align:center; padding:40px 14px; color:var(--text-faint); font-size:13.5px; }
+.empty .big{ font-size:15px; color:var(--text-dim); margin-bottom:6px; }
+
+.kpi-row{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; }
+.kpi{ background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+.kpi .lbl{ font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.05em; font-weight:700; }
+.kpi .val{ font-family:var(--mono); font-size:19px; font-weight:700; margin-top:3px; }
+
+.field-with-btn{ display:flex; gap:8px; }
+.accessory-row{ display:flex; gap:10px; }
+.accessory-check{
+  flex:1; display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
+  background:var(--panel-2); border:1px solid var(--border); border-radius:8px; padding:11px 12px;
+  font-size:14px; color:var(--text);
+}
+.accessory-check input{ width:18px; height:18px; accent-color:var(--amber); flex-shrink:0; }
+.accessory-check:has(input:checked){ border-color:var(--amber); background:var(--amber-dim); }
+
+.lab-item-row{
+  background:var(--panel-2); border:1px solid var(--border); border-radius:10px;
+  padding:12px 14px; margin-bottom:10px;
+}
+.lab-item-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.lab-item-num{ font-family:var(--mono); font-size:10.5px; color:var(--text-faint); }
+.lab-item-remove{ background:transparent; border:none; color:var(--red); font-size:12px; cursor:pointer; padding:2px 6px; }
+.field-with-btn input{ flex:1; }
+.scan-btn{
+  flex-shrink:0; width:46px; height:46px; display:flex; align-items:center; justify-content:center;
+  background:var(--panel-2); border:1px solid var(--border); border-radius:8px; font-size:19px; cursor:pointer;
+}
+.scan-btn:active{ border-color:var(--amber); }
+
+.scanner-overlay{
+  display:none; position:fixed; inset:0; background:rgba(6,7,10,0.92); z-index:150;
+  align-items:center; justify-content:center; padding:16px;
+}
+.scanner-overlay.active{ display:flex; }
+.scanner-box{
+  width:100%; max-width:420px; background:var(--panel); border:1px solid var(--border);
+  border-radius:14px; overflow:hidden;
+}
+.scanner-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px 0 16px; }
+.scanner-title{ font-size:15px; font-weight:700; }
+.modal-close{ background:transparent; border:none; color:var(--text-faint); font-size:20px; cursor:pointer; padding:2px 6px; }
+.modal-close:active{ color:var(--text); }
+.scanner-video-wrap{ position:relative; background:#000; aspect-ratio:3/4; margin-top:12px; overflow:hidden; }
+.scanner-video-wrap video{ width:100%; height:100%; object-fit:cover; }
+.scanner-frame{
+  position:absolute; inset:16% 10%; border:3px solid var(--amber); border-radius:14px;
+  box-shadow:0 0 0 2000px rgba(0,0,0,0.35); pointer-events:none;
+}
+
+.toast{
+  position:fixed; left:16px; right:16px; bottom: calc(78px + env(safe-area-inset-bottom,0px));
+  background:var(--teal); color:#0a2b24; padding:12px 16px; border-radius:10px;
+  font-size:13.5px; font-weight:600; text-align:center; z-index:200;
+  opacity:0; transform:translateY(10px); transition: all .25s; pointer-events:none;
+}
+.toast.show{ opacity:1; transform:translateY(0); }
+
+nav.tabbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:50;
+  background:var(--panel); border-top:1px solid var(--border);
+  display:flex; padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px)) 4px;
+}
+.tab-item{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+  color:var(--text-faint); font-size:10.5px; font-weight:700; padding:6px 4px; border-radius:8px;
+}
+.tab-item .ic{ font-size:18px; }
+.tab-item.active{ color:var(--amber); }
+
+.install-banner{
+  display:none; background:var(--amber-dim); border:1px solid #5a441f; color:var(--amber);
+  border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:12.5px; line-height:1.5;
+}
+.install-banner.show{ display:block; }
+.install-banner button{ margin-top:8px; }
+
+.geo-badge{
+  display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-faint);
+  background:var(--panel); border:1px solid var(--border); border-radius:8px;
+  padding:8px 12px; margin-bottom:14px;
+}
+.geo-badge.ok{ color:var(--teal); border-color:#1c5c50; background:var(--teal-dim); }
+.geo-badge.warn{ color:var(--red); border-color:#5a2a2a; background:var(--red-dim); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">AL</div>
+    <div class="brand-text">
+      <div class="t1">ASSETLINE Collector</div>
+      <div class="t2">FIELD DATA ENTRY</div>
+    </div>
+  </div>
+  <div class="sync-badge" id="syncBadge">— entries</div>
+</header>
+
+<main>
+
+  <!-- ADD -->
+  <div class="view active" id="view-add">
+    <div class="install-banner" id="installBanner">
+      Install this on your home screen for the full app experience — works offline too.
+      <div><button class="btn small primary" id="installBtn">Install app</button></div>
+    </div>
+
+    <div class="geo-badge" id="geoBadge">📍 Getting location…</div>
+
+    <div class="panel">
+      <div class="section-title">New asset entry</div>
+
+      <label>Branch *</label>
+      <input type="text" id="fBranch" list="branchList" placeholder="e.g. AP-KRI-VIJ-NELITE-NSPIRA-C-5182">
+      <datalist id="branchList"></datalist>
+
+      <div class="row2">
+        <div>
+          <label>Floor</label>
+          <input type="text" id="fFloor" list="floorList" placeholder="e.g. 2nd Floor" autocomplete="off">
+          <datalist id="floorList"></datalist>
+        </div>
+        <div>
+          <label>Room / Area</label>
+          <input type="text" id="fRoom" placeholder="e.g. Staff Room">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label>Category *</label>
+          <select id="fCategory">
+            <option value="">Select…</option>
+          </select>
+        </div>
+        <div>
+          <label>Asset name *</label>
+          <input type="text" id="fName" list="nameList" placeholder="e.g. IP Dome Camera 2MP" autocomplete="off">
+          <datalist id="nameList"></datalist>
+        </div>
+      </div>
+
+      <div class="row2" id="makeModelRow">
+        <div id="makeFieldGroup">
+          <label>Make</label>
+          <input type="text" id="fMake" placeholder="e.g. Dahua">
+        </div>
+        <div>
+          <label>Model</label>
+          <input type="text" id="fModel" placeholder="—">
+        </div>
+      </div>
+
+      <div class="row2" id="serialQtyRow">
+        <div id="serialFieldGroup">
+          <label>Serial No</label>
+          <div class="field-with-btn">
+            <input type="text" id="fSerial" placeholder="—">
+            <button type="button" class="scan-btn" id="scanBarcodeBtn" title="Scan barcode / QR code">▦</button>
+          </div>
+        </div>
+        <div>
+          <label>Quantity</label>
+          <input type="number" id="fQty" value="1" min="1">
+        </div>
+      </div>
+
+      <div id="batchSerialsGroup" style="display:none;">
+        <label>Serial Numbers <span style="font-weight:400;color:var(--text-faint);">(optional — for a batch of units)</span></label>
+        <textarea id="fSerialsBatch" placeholder="Paste individual serials — one per line or comma-separated — to create one entry per serial instead of a single combined-quantity entry. Leave blank to just use Quantity above." style="min-height:44px;"></textarea>
+        <button type="button" class="btn ghost small" id="scanBatchBtn" style="margin-top:8px;">▦ Scan to add serial</button>
+      </div>
+
+      <div id="laptopSection" style="display:none; border-top:1px solid var(--border); margin-top:14px; padding-top:14px;">
+        <div class="section-title" style="color:var(--amber);">Laptop Assignment</div>
+        <div class="row2">
+          <div>
+            <label>Global ID</label>
+            <input type="text" id="fGlobalId" placeholder="e.g. GID-10234">
+          </div>
+          <div>
+            <label>Employee Name</label>
+            <input type="text" id="fEmpName" placeholder="e.g. Ramesh Kumar">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Employee Phone</label>
+            <input type="tel" id="fEmpPhone" placeholder="e.g. 9876543210">
+          </div>
+          <div></div>
+        </div>
+      </div>
+
+      <div id="systemConfigSection" style="display:none; border-top:1px solid var(--border); margin-top:14px; padding-top:14px;">
+        <div class="section-title" style="color:var(--amber);">Hardware Configuration</div>
+        <div class="row2">
+          <div>
+            <label>Processor</label>
+            <input type="text" id="fProcessor" placeholder="e.g. Intel i3 10th Gen">
+          </div>
+          <div>
+            <label>RAM (GB)</label>
+            <input type="number" id="fRam" placeholder="e.g. 8" min="0">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Storage (GB)</label>
+            <input type="number" id="fStorage" placeholder="e.g. 256" min="0">
+          </div>
+          <div>
+            <label>Storage Type</label>
+            <select id="fStorageType">
+              <option value="">Select…</option>
+              <option>HDD</option>
+              <option>SSD</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="accessoriesSection" style="display:none; border-top:1px solid var(--border); margin-top:14px; padding-top:14px;">
+        <div class="section-title" style="color:var(--amber);">Included Accessories</div>
+        <div class="accessory-row">
+          <label class="accessory-check">
+            <input type="checkbox" id="fHasKeyboard">
+            <span>⌨️ Keyboard</span>
+          </label>
+          <label class="accessory-check">
+            <input type="checkbox" id="fHasMouse">
+            <span>🖱️ Mouse</span>
+          </label>
+        </div>
+      </div>
+
+      <div id="nvrStorageSection" style="display:none; border-top:1px solid var(--border); margin-top:14px; padding-top:14px;">
+        <div class="section-title" style="color:var(--amber);">Storage Configuration</div>
+        <div class="row2">
+          <div>
+            <label>Storage Capacity</label>
+            <select id="fNvrStorage" onchange="toggleNvrStorageOther()">
+              <option value="">Select…</option>
+              <option>1TB</option>
+              <option>2TB</option>
+              <option>4TB</option>
+              <option>8TB</option>
+              <option>16TB</option>
+              <option value="__OTHER__">Other…</option>
+            </select>
+          </div>
+          <div id="nvrStorageOtherGroup" style="display:none;">
+            <label>Specify capacity</label>
+            <input type="text" id="fNvrStorageOther" placeholder="e.g. 6TB">
+          </div>
+        </div>
+      </div>
+
+      <label>Status</label>
+      <select id="fStatus"></select>
+
+      <label>Remarks</label>
+      <textarea id="fRemarks" placeholder="optional"></textarea>
+
+      <div class="btn-row">
+        <button class="btn ghost" id="clearBtnForm">Clear</button>
+        <button class="btn primary" id="saveBtn">Save entry</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-faint);text-align:center;margin-top:10px;">Saved on this device — works fully offline</div>
+    </div>
+  </div>
+
+  <!-- ENTRIES -->
+  <div class="view" id="view-entries">
+    <div class="kpi-row" id="kpiRow"></div>
+    <div class="search-row">
+      <input type="text" id="searchBox" placeholder="Search branch, room, name, serial…">
+    </div>
+    <div id="entriesList"></div>
+  </div>
+
+  <!-- EXPORT -->
+  <div class="view" id="view-export">
+    <div class="panel">
+      <div class="section-title">Export collected data</div>
+      <p style="font-size:13px;color:var(--text-dim);line-height:1.6;">
+        Exports entries on this device as a CSV in the exact column format ASSETLINE expects
+        (Branch, Floor, Room / Area, Asset Category, Asset Name, Make, Model, Serial No, Quantity, Status, Remarks, Global ID, Employee Name, Employee Phone, Processor, RAM (GB), Storage (GB), Storage Type, NVR/DVR Storage, GPS Location).
+        Share the file over WhatsApp / email / Drive, or upload it straight into the ASSETLINE web app's
+        Import / Merge tab.
+      </p>
+      <label>Branch</label>
+      <select id="exportBranchFilter">
+        <option value="">All branches</option>
+      </select>
+      <button class="btn primary" id="exportBtn">↓ Export CSV (<span id="exportCount">0</span> entries)</button>
+    </div>
+    <div class="panel">
+      <div class="section-title">Danger zone</div>
+      <p style="font-size:12.5px;color:var(--text-dim);">Clears every entry saved on this device. Export first if you need a copy.</p>
+      <button class="btn danger" id="clearBtn">Clear all entries</button>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<div class="scanner-overlay" id="barcodeModal">
+  <div class="scanner-box">
+    <div class="scanner-head">
+      <div class="scanner-title" id="scannerTitleText">Scan Serial Number</div>
+      <button class="modal-close" id="closeBarcodeModal">✕</button>
+    </div>
+    <div class="scanner-video-wrap">
+      <video id="barcodeVideo" autoplay playsinline muted></video>
+      <div class="scanner-frame"></div>
+    </div>
+    <div class="hint" id="barcodeStatus" style="padding:12px 16px; margin-top:0;">Position the barcode or QR code within the frame…</div>
+  </div>
+</div>
+
+<nav class="tabbar">
+  <div class="tab-item active" data-view="add"><span class="ic">＋</span>Add</div>
+  <div class="tab-item" data-view="entries"><span class="ic">▤</span>Entries</div>
+  <div class="tab-item" data-view="export"><span class="ic">↓</span>Export</div>
+</nav>
+
+<script>
+/* ===== Data layer (localStorage — fully offline, this device only) ===== */
+const STORE_KEY = 'assetline-collector-entries';
+let ENTRIES = [];
+
+function loadEntries(){
+  try{
+    ENTRIES = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
+  }catch(e){ ENTRIES = []; }
+}
+function saveEntries(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(ENTRIES));
+}
+
+const CATEGORIES = ["CCTV Camera","NVR","DVR","DVR SMPS","Network Switch","POE Switch","Router","Access Point","Rack",
+  "System","Laptop","VCloudPoint","NComputing","Monitor","Printer","Xerox Machine","Scanner","Biometric","Projector","TV Display","Audio",
+  "UPS","Server","Storage Device","Interactive Panel","Other"];
+
+const STATUSES = ["Working","Not Working","Under Repair","Sent to Vendor","Awaiting Spare",
+  "Replaced","Pending Installation","Installed","Damaged","Missing","Scrap","In Warehouse"];
+
+/* Known asset catalog per category — powers the Asset Name suggestion list
+   and auto-fills Make + Model when a listed item is picked. Extend this
+   object with more categories/items any time. */
+const CATALOG = {
+  "Printer": [
+    { name: "HP LaserJet Pro MFP M329dw", make: "HP", model: "LaserJet Pro MFP M329dw" },
+    { name: "HP LaserJet Pro MFP M128fn", make: "HP", model: "LaserJet Pro MFP M128fn" },
+    { name: "HP LaserJet 1020 Plus",       make: "HP", model: "LaserJet 1020 Plus" },
+    { name: "Canon Laser Shot LBP2900B",   make: "Canon", model: "LBP2900B" }
+  ],
+  "CCTV Camera": [
+    { name: "Hikvision 2MP Dome Camera",  make: "Hikvision", model: "Dome" },
+    { name: "Hikvision 2MP Bullet Camera",make: "Hikvision", model: "Bullet" },
+    { name: "Prama 2MP Dome Camera",      make: "Prama",     model: "Dome" },
+    { name: "Prama 2MP Bullet Camera",    make: "Prama",     model: "Bullet" },
+    { name: "Dahua 2MP Dome Camera",      make: "Dahua",     model: "Dome" },
+    { name: "Dahua 2MP Bullet Camera",    make: "Dahua",     model: "Bullet" }
+  ],
+  "NVR": [
+    { name: "Hikvision 32CH NVR", make: "Hikvision", model: "32CH NVR" },
+    { name: "Hikvision 16CH NVR", make: "Hikvision", model: "16CH NVR" },
+    { name: "Hikvision 8CH NVR",  make: "Hikvision", model: "8CH NVR" },
+    { name: "Prama 32CH NVR",     make: "Prama",     model: "32CH NVR" },
+    { name: "Prama 16CH NVR",     make: "Prama",     model: "16CH NVR" },
+    { name: "Prama 8CH NVR",      make: "Prama",     model: "8CH NVR" }
+  ],
+  "DVR": [
+    { name: "Hikvision 32CH DVR", make: "Hikvision", model: "32CH DVR" },
+    { name: "Hikvision 16CH DVR", make: "Hikvision", model: "16CH DVR" },
+    { name: "Hikvision 8CH DVR",  make: "Hikvision", model: "8CH DVR" }
+  ],
+  "NComputing": [
+    { name: "2015 BELOW", make: "-", model: "L300" },
+    { name: "2015 ABOVE", make: "-", model: "L300" }
+  ]
+};
+
+function initSelects(){
+  document.getElementById('fCategory').innerHTML += CATEGORIES.map(c=>`<option>${c}</option>`).join('');
+  document.getElementById('fStatus').innerHTML = STATUSES.map(s=>`<option ${s==='Working'?'selected':''}>${s}</option>`).join('');
+}
+
+function populateNameSuggestions(category){
+  const items = CATALOG[category] || [];
+  document.getElementById('nameList').innerHTML = items.map(i=>`<option value="${escapeHtml(i.name)}">`).join('');
+}
+
+function tryAutoFillFromCatalog(){
+  const category = document.getElementById('fCategory').value;
+  const typed = document.getElementById('fName').value.trim().toLowerCase();
+  const items = CATALOG[category] || [];
+  const match = items.find(i=> i.name.toLowerCase() === typed);
+  if(match){
+    document.getElementById('fMake').value = match.make;
+    document.getElementById('fModel').value = match.model;
+  }
+}
+
+function toggleSystemConfig(){
+  const cat = document.getElementById('fCategory').value;
+  const isThinClient = (cat === 'VCloudPoint' || cat === 'NComputing');
+
+  document.getElementById('laptopSection').style.display = (cat === 'Laptop') ? 'block' : 'none';
+  document.getElementById('systemConfigSection').style.display = (cat === 'System' || cat === 'Laptop') ? 'block' : 'none';
+  document.getElementById('accessoriesSection').style.display = (cat === 'System' || isThinClient) ? 'block' : 'none';
+  document.getElementById('nvrStorageSection').style.display = (cat === 'NVR' || cat === 'DVR') ? 'block' : 'none';
+
+  // DVR SMPS is a simple stock item — just needs a quantity, skip Make/Model/Serial.
+  // VCloudPoint/NComputing also skip the single Serial No field — they use the
+  // batch Serial Numbers box (with its own scanner) further down instead.
+  const isQtyOnly = (cat === 'DVR SMPS');
+  const hideSerial = isQtyOnly || isThinClient;
+  document.getElementById('makeModelRow').style.display = isQtyOnly ? 'none' : 'grid';
+  document.getElementById('serialFieldGroup').style.display = hideSerial ? 'none' : 'block';
+  document.getElementById('serialQtyRow').style.gridTemplateColumns = hideSerial ? '1fr' : '1fr 1fr';
+
+  // VCloudPoint / NComputing: no Make field needed, name/model are fixed values,
+  // and a batch-serials box appears for logging a room full of units at once.
+  document.getElementById('makeFieldGroup').style.display = isThinClient ? 'none' : 'block';
+  document.getElementById('makeModelRow').style.gridTemplateColumns = (isThinClient && !isQtyOnly) ? '1fr' : (isQtyOnly ? '1fr' : '1fr 1fr');
+  document.getElementById('batchSerialsGroup').style.display = isThinClient ? 'block' : 'none';
+
+  if(cat === 'VCloudPoint'){
+    document.getElementById('fName').value = 'VCLOUDPOINT';
+    document.getElementById('fModel').value = 'V1';
+  }
+  // NComputing: Asset Name is picked from the "2015 BELOW" / "2015 ABOVE" suggestions
+  // (populated by populateNameSuggestions from the catalog below), which auto-fills
+  // Model to L300 once chosen — same mechanism as Printer/CCTV/NVR suggestions.
+}
+
+function toggleNvrStorageOther(){
+  const v = document.getElementById('fNvrStorage').value;
+  document.getElementById('nvrStorageOtherGroup').style.display = (v === '__OTHER__') ? 'block' : 'none';
+}
+
+document.getElementById('fCategory').addEventListener('change', ()=>{
+  populateNameSuggestions(document.getElementById('fCategory').value);
+  toggleSystemConfig();
+});
+document.getElementById('fName').addEventListener('input', tryAutoFillFromCatalog);
+document.getElementById('fName').addEventListener('change', tryAutoFillFromCatalog);
+
+/* Official NSPIRA branch list — powers the Branch suggestion dropdown.
+   Anything typed that isn't in this list still gets saved fine (e.g. a
+   brand-new branch), it just won't show as a suggestion until it's been
+   entered once on this device. */
+const BRANCHES = [
+  "AP-KRI-AVG-NSPIRA-S-5589",
+  "AP-KRI-GDV-NSPIRA-C-6041",
+  "AP-KRI-GDV-NSPIRA-S-5480",
+  "AP-KRI-GVRM-NSPIRA-S-5781",
+  "AP-KRI-HJN-NSPIRA-S-6910",
+  "AP-KRI-JPT-NSPIRA-S-5491",
+  "AP-KRI-MG-NSPIRA-C-5926",
+  "AP-KRI-MG-NSPIRA-S-5675",
+  "AP-KRI-MTM-NSPIRA-C-6042",
+  "AP-KRI-MTM-NSPIRA-S-5780",
+  "AP-KRI-MYVM-NSPIRA-S-6908",
+  "AP-KRI-NDG-NSPIRA-S-5667",
+  "AP-KRI-NZV-NSPIRA-S-5668",
+  "AP-KRI-TVR-NSPIRA-S-6909",
+  "AP-KRI-VIJ-ASN-NSPIRA-S-7097",
+  "AP-KRI-VIJ-BVP-NSPIRA-C-5186",
+  "AP-KRI-VIJ-BVP-NSPIRA-S-5622",
+  "AP-KRI-VIJ-CN-NSPIRA-S-5183",
+  "AP-KRI-VIJ-CO N40(GH)-NSPIRA-C-6400",
+  "AP-KRI-VIJ-EC-NSPIRA-C-7117",
+  "AP-KRI-VIJ-EDP-NSPIRA-S-(H)-5909",
+  "AP-KRI-VIJ-ER-NSPIRA-C-5191",
+  "AP-KRI-VIJ-GPD-NSPIRA-S-6352",
+  "AP-KRI-VIJ-GSB(BH)-NSPIRA-C-6116",
+  "AP-KRI-VIJ-HSR-NSPIRA-S-5476",
+  "AP-KRI-VIJ-JB(H)-NSPIRA-C-6204",
+  "AP-KRI-VIJ-KBEC-NSPIRA-C-5189",
+  "AP-KRI-VIJ-KND-ETS-NSPIRA-S-5817",
+  "AP-KRI-VIJ-KND-ONCS-NSPIRA-S-6579",
+  "AP-KRI-VIJ-KNR-(H)-NSPIRA-S-5942",
+  "AP-KRI-VIJ-KNR-N120(H)-NSPIRA-C-6210",
+  "AP-KRI-VIJ-MGP-COS-NSPIRA-S-6967",
+  "AP-KRI-VIJ-MGP-ONCS-NSPIRA-S-5184",
+  "AP-KRI-VIJ-MN-NSPIRA-S-5884",
+  "AP-KRI-VIJ-NAD-NSPIRA-C-5195",
+  "AP-KRI-VIJ-NB(H)-NICS-NSPIRA-S-6956",
+  "AP-KRI-VIJ-NELITE-NSPIRA-C-5182",
+  "AP-KRI-VIJ-PRK(BH)-NSPIRA-C-6115",
+  "AP-KRI-VIJ-PRK(GH)-NSPIRA-C-5906",
+  "AP-KRI-VIJ-SB(BH)-NSPIRA-C-6383",
+  "AP-KRI-VIJ-SBVCO(BH)-NSPIRA-C-6097",
+  "AP-KRI-VIJ-SHB(GH)-NSPIRA-C-6311",
+  "AP-KRI-VIJ-SKB(BH)-NSPIRA-C-5180",
+  "AP-KRI-VIJ-SPARK-NSPIRA-C-6112",
+  "AP-KRI-VIJ-STAR CO(H)-NSPIRA-C-7148",
+  "AP-KRI-VIJ-SV1(GH)-NSPIRA-C-6236",
+  "AP-KRI-VIJ-SV2(GH)-NSPIRA-C-5894",
+  "AP-KRI-VIJ-SV3(GH)-NSPIRA-C-7154",
+  "AP-KRI-VIJ-VB-NSPIRA-C-6582",
+  "AP-KRI-VIJ-VVS(BH)-NSPIRA-C-6237",
+  "AP-KRI-VYR-NSPIRA-C-5198",
+  "AP-KRI-VYR-NSPIRA-S-5669",
+  "NSPIRA-AP-S-6064",
+  "VIJ-ANNAPURNA-NSPIRA-PR-6413",
+  "VIJ-CO-N-120-NSPIRA-C-6402",
+  "VIJ-NSPIRA-PRO-WH-6035",
+  "VIJ-NSPIRA-SS-WH-6124",
+  "VIJ-NSPIRA-VEG-WH-5562",
+  "AP-KRI-VIJ-COS DAY KNR-NSPIRA-S-7160",
+  "VIJ-NSPIRA-WORKSHOP-6950"
+];
+
+const FLOORS = [
+  "Cellar",
+  "Ground Floor",
+  "1st Floor",
+  "2nd Floor",
+  "3rd Floor",
+  "4th Floor",
+  "5th Floor",
+  "Terrace"
+];
+
+function refreshBranchList(){
+  const dynamic = ENTRIES.map(e=>e.branch);
+  const all = [...new Set([...BRANCHES, ...dynamic])].sort();
+  document.getElementById('branchList').innerHTML = all.map(b=>`<option value="${escapeHtml(b)}">`).join('');
+}
+
+function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ===== Tabs ===== */
+document.querySelectorAll('.tab-item').forEach(el=>{
+  el.addEventListener('click', ()=> switchView(el.dataset.view));
+});
+function switchView(name){
+  document.querySelectorAll('.tab-item').forEach(n=> n.classList.toggle('active', n.dataset.view===name));
+  document.querySelectorAll('.view').forEach(v=> v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  if(name==='entries') renderEntries();
+  if(name==='export') renderExportView();
+  window.scrollTo({top:0});
+}
+
+/* ===== Barcode / QR scanner (for Serial No) ===== */
+let scannerStream = null;
+let scannerRAF = null;
+let scannerDetector = null;
+let scannerMode = 'single'; // 'single' fills Serial No and closes; 'batch' appends to the batch textarea and keeps scanning
+let scannerBatchCount = 0;
+
+function openBarcodeScanner(mode){
+  scannerMode = mode || 'single';
+  scannerBatchCount = 0;
+  const modal = document.getElementById('barcodeModal');
+  const statusEl = document.getElementById('barcodeStatus');
+  document.getElementById('scannerTitleText').textContent = scannerMode === 'batch' ? 'Scan Serials (batch)' : 'Scan Serial Number';
+  modal.classList.add('active');
+
+  if(!('BarcodeDetector' in window)){
+    statusEl.textContent = 'Barcode scanning isn\'t supported in this browser. Please type the serial number manually, or open this app in Chrome on Android.';
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+
+  statusEl.style.color = 'var(--text-faint)';
+  statusEl.textContent = scannerMode === 'batch'
+    ? 'Position the first barcode within the frame — each scan adds a serial, keep going and tap ✕ when done.'
+    : 'Position the barcode or QR code within the frame…';
+
+  scannerDetector = new BarcodeDetector({
+    formats: ['qr_code','code_128','code_39','ean_13','ean_8','upc_a','upc_e','codabar','itf','data_matrix']
+  });
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then((stream)=>{
+      scannerStream = stream;
+      const video = document.getElementById('barcodeVideo');
+      video.srcObject = stream;
+      scanLoop();
+    })
+    .catch(()=>{
+      statusEl.textContent = 'Could not access the camera — check camera permission for this app/site, or type the serial manually.';
+      statusEl.style.color = 'var(--red)';
+    });
+}
+
+function scanLoop(){
+  const video = document.getElementById('barcodeVideo');
+  if(!scannerDetector || !video || video.readyState < 2){
+    scannerRAF = requestAnimationFrame(scanLoop);
+    return;
+  }
+  scannerDetector.detect(video)
+    .then((codes)=>{
+      if(codes && codes.length > 0){
+        const value = codes[0].rawValue;
+        if(scannerMode === 'batch'){
+          appendBatchSerial(value);
+          scannerBatchCount++;
+          const statusEl = document.getElementById('barcodeStatus');
+          statusEl.style.color = 'var(--teal)';
+          statusEl.textContent = `Added "${value}" · ${scannerBatchCount} scanned so far — keep scanning or tap ✕ when done.`;
+          showToast('Serial added: ' + value);
+          // brief pause so the same code isn't scanned twice in a row, then resume
+          setTimeout(()=>{
+            if(document.getElementById('barcodeModal').classList.contains('active')){
+              scannerRAF = requestAnimationFrame(scanLoop);
+            }
+          }, 900);
+        } else {
+          document.getElementById('fSerial').value = value;
+          showToast('Serial scanned: ' + value);
+          closeBarcodeScanner();
+        }
+      } else {
+        scannerRAF = requestAnimationFrame(scanLoop);
+      }
+    })
+    .catch(()=>{
+      scannerRAF = requestAnimationFrame(scanLoop);
+    });
+}
+
+function appendBatchSerial(value){
+  const ta = document.getElementById('fSerialsBatch');
+  const current = ta.value.trim();
+  ta.value = current ? (current + '\n' + value) : value;
+}
+
+function closeBarcodeScanner(){
+  document.getElementById('barcodeModal').classList.remove('active');
+  if(scannerRAF) cancelAnimationFrame(scannerRAF);
+  scannerRAF = null;
+  scannerDetector = null;
+  if(scannerStream){
+    scannerStream.getTracks().forEach(t=> t.stop());
+    scannerStream = null;
+  }
+  const video = document.getElementById('barcodeVideo');
+  if(video) video.srcObject = null;
+}
+
+document.getElementById('scanBarcodeBtn').addEventListener('click', ()=> openBarcodeScanner('single'));
+document.getElementById('scanBatchBtn').addEventListener('click', ()=> openBarcodeScanner('batch'));
+document.getElementById('closeBarcodeModal').addEventListener('click', closeBarcodeScanner);
+
+/* ===== Save entry ===== */
+document.getElementById('saveBtn').addEventListener('click', ()=>{
+  const branch = document.getElementById('fBranch').value.trim();
+  const category = document.getElementById('fCategory').value;
+  const name = document.getElementById('fName').value.trim();
+
+  if(!branch || !category || !name){
+    showToast('Branch, category, and asset name are required', true);
+    return;
+  }
+
+  const isSystem = category === 'System';
+  const isLaptop = category === 'Laptop';
+  const hasHwConfig = isSystem || isLaptop;
+  const hasAccessories = category === 'System' || category === 'NComputing' || category === 'VCloudPoint';
+  const isThinClient = category === 'VCloudPoint' || category === 'NComputing';
+  const isNvrDvr = category === 'NVR' || category === 'DVR';
+  const nvrStorageVal = document.getElementById('fNvrStorage').value;
+  const nvrStorage = nvrStorageVal === '__OTHER__'
+    ? document.getElementById('fNvrStorageOther').value.trim()
+    : nvrStorageVal;
+
+  const baseEntry = {
+    branch, category, name,
+    floor: document.getElementById('fFloor').value.trim() || '-',
+    room: document.getElementById('fRoom').value.trim() || '-',
+    make: document.getElementById('fMake').value.trim() || '-',
+    model: document.getElementById('fModel').value.trim() || '-',
+    status: document.getElementById('fStatus').value,
+    remarks: document.getElementById('fRemarks').value.trim(),
+    globalId: isLaptop ? document.getElementById('fGlobalId').value.trim() : '',
+    empName: isLaptop ? document.getElementById('fEmpName').value.trim() : '',
+    empPhone: isLaptop ? document.getElementById('fEmpPhone').value.trim() : '',
+    processor: hasHwConfig ? document.getElementById('fProcessor').value.trim() : '',
+    ramGb: hasHwConfig ? document.getElementById('fRam').value.trim() : '',
+    storageGb: hasHwConfig ? document.getElementById('fStorage').value.trim() : '',
+    storageType: hasHwConfig ? document.getElementById('fStorageType').value : '',
+    hasKeyboard: hasAccessories ? document.getElementById('fHasKeyboard').checked : false,
+    hasMouse: hasAccessories ? document.getElementById('fHasMouse').checked : false,
+    nvrStorage: isNvrDvr ? nvrStorage : '',
+    geoLat: GEO ? GEO.lat : null,
+    geoLng: GEO ? GEO.lng : null,
+    geoAcc: GEO ? GEO.acc : null
+  };
+
+  // VCloudPoint / NComputing batch: if serials were pasted, create one entry
+  // per serial (qty 1 each); otherwise fall back to a single combined entry
+  // using the Quantity field — same as every other category.
+  const batchSerialsRaw = isThinClient ? document.getElementById('fSerialsBatch').value.trim() : '';
+  const batchSerials = batchSerialsRaw
+    ? batchSerialsRaw.split(/[,\n]/).map(s=> s.trim()).filter(Boolean)
+    : [];
+
+  let savedCount = 0;
+  if(batchSerials.length > 0){
+    batchSerials.forEach(serial=>{
+      ENTRIES.unshift({
+        ...baseEntry,
+        id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+        serial, qty: '1',
+        ts: new Date().toISOString()
+      });
+      savedCount++;
+    });
+  } else {
+    ENTRIES.unshift({
+      ...baseEntry,
+      id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+      serial: document.getElementById('fSerial').value.trim() || '-',
+      qty: document.getElementById('fQty').value || '1',
+      ts: new Date().toISOString()
+    });
+    savedCount = 1;
+  }
+
+  saveEntries();
+  refreshBranchList();
+  updateSyncBadge();
+
+  // reset form but keep branch/floor/room for fast repeat entry in same location
+  document.getElementById('fCategory').value = '';
+  document.getElementById('fName').value = '';
+  populateNameSuggestions('');
+  document.getElementById('fMake').value = '';
+  document.getElementById('fModel').value = '';
+  document.getElementById('fSerial').value = '';
+  document.getElementById('fSerialsBatch').value = '';
+  document.getElementById('fQty').value = '1';
+  document.getElementById('fStatus').value = 'Working';
+  document.getElementById('fRemarks').value = '';
+  document.getElementById('fGlobalId').value = '';
+  document.getElementById('fEmpName').value = '';
+  document.getElementById('fEmpPhone').value = '';
+  document.getElementById('fProcessor').value = '';
+  document.getElementById('fRam').value = '';
+  document.getElementById('fStorage').value = '';
+  document.getElementById('fStorageType').value = '';
+  document.getElementById('fHasKeyboard').checked = false;
+  document.getElementById('fHasMouse').checked = false;
+  document.getElementById('fNvrStorage').value = '';
+  document.getElementById('fNvrStorageOther').value = '';
+  toggleNvrStorageOther();
+  toggleSystemConfig();
+  document.getElementById('fName').focus();
+
+  showToast(savedCount > 1 ? `${savedCount} entries saved · ${ENTRIES.length} total on this device` : `Entry saved · ${ENTRIES.length} total on this device`);
+});
+
+/* ===== Clear form ===== */
+document.getElementById('clearBtnForm').addEventListener('click', ()=>{
+  document.getElementById('fBranch').value = '';
+  document.getElementById('fFloor').value = '';
+  document.getElementById('fRoom').value = '';
+  document.getElementById('fCategory').value = '';
+  document.getElementById('fName').value = '';
+  populateNameSuggestions('');
+  document.getElementById('fMake').value = '';
+  document.getElementById('fModel').value = '';
+  document.getElementById('fSerial').value = '';
+  document.getElementById('fSerialsBatch').value = '';
+  document.getElementById('fQty').value = '1';
+  document.getElementById('fStatus').value = 'Working';
+  document.getElementById('fRemarks').value = '';
+  document.getElementById('fGlobalId').value = '';
+  document.getElementById('fEmpName').value = '';
+  document.getElementById('fEmpPhone').value = '';
+  document.getElementById('fProcessor').value = '';
+  document.getElementById('fRam').value = '';
+  document.getElementById('fStorage').value = '';
+  document.getElementById('fStorageType').value = '';
+  document.getElementById('fHasKeyboard').checked = false;
+  document.getElementById('fHasMouse').checked = false;
+  document.getElementById('fNvrStorage').value = '';
+  document.getElementById('fNvrStorageOther').value = '';
+  toggleNvrStorageOther();
+  toggleSystemConfig();
+  document.getElementById('fBranch').focus();
+  showToast('Form cleared');
+});
+
+/* ===== Entries list ===== */
+let COLLAPSED = new Set();
+
+function entryCardHtml(e, showBranchTag){
+  const isWorking = e.status === 'Working';
+  return `<div class="entry-card">
+    <div class="entry-top">
+      <div>
+        ${showBranchTag ? `<span class="entry-tag">${escapeHtml(e.branch)}</span>` : ''}
+        <div class="entry-name">${escapeHtml(e.name)}</div>
+        <div class="entry-meta">${escapeHtml(e.floor)} · ${escapeHtml(e.room)} · ${escapeHtml(e.category)}<br>${escapeHtml(e.make)} ${escapeHtml(e.model)} ${e.serial!=='-'?'· SN: '+escapeHtml(e.serial):''} · Qty ${escapeHtml(e.qty)}</div>
+      </div>
+      <span class="pill ${isWorking?'working':'bad'}"><span class="d"></span>${escapeHtml(e.status)}</span>
+    </div>
+    ${e.remarks ? `<div class="entry-meta" style="margin-top:6px;">📝 ${escapeHtml(e.remarks)}</div>` : ''}
+    ${(e.globalId || e.empName || e.empPhone) ? `<div class="entry-meta" style="margin-top:6px;">🪪 ${e.globalId?escapeHtml(e.globalId):'Global ID —'} · ${e.empName?escapeHtml(e.empName):'—'}${e.empPhone?' · '+escapeHtml(e.empPhone):''}</div>` : ''}
+    ${(e.processor || e.ramGb || e.storageGb || e.storageType) ? `<div class="entry-meta" style="margin-top:6px;">🖥️ ${escapeHtml(e.processor||'—')} · ${e.ramGb?escapeHtml(e.ramGb)+'GB RAM':'RAM —'} · ${e.storageGb?escapeHtml(e.storageGb)+'GB '+escapeHtml(e.storageType||''):'Storage —'}</div>` : ''}
+    ${(e.hasKeyboard || e.hasMouse) ? `<div class="entry-meta" style="margin-top:6px;">${e.hasKeyboard?'⌨️ Keyboard':''}${(e.hasKeyboard&&e.hasMouse)?' · ':''}${e.hasMouse?'🖱️ Mouse':''}</div>` : ''}
+    ${e.nvrStorage ? `<div class="entry-meta" style="margin-top:6px;">💾 Storage: ${escapeHtml(e.nvrStorage)}</div>` : ''}
+    ${(e.geoLat!=null && e.geoLng!=null) ? `<div class="entry-meta" style="margin-top:4px;"><a href="https://maps.google.com/?q=${e.geoLat},${e.geoLng}" target="_blank" rel="noopener" style="color:var(--teal);text-decoration:none;">📍 View location on map ${e.geoAcc?('(±'+e.geoAcc+'m)'):''}</a></div>` : ''}
+    <div class="entry-actions">
+      <button class="icon-btn danger" onclick="deleteEntry('${e.id}')">Delete</button>
+    </div>
+  </div>`;
+}
+
+function toggleBranchGroup(encoded){
+  const branch = decodeURIComponent(encoded);
+  if(COLLAPSED.has(branch)) COLLAPSED.delete(branch);
+  else COLLAPSED.add(branch);
+  renderEntries();
+}
+
+function renderEntries(){
+  const totalQty = ENTRIES.reduce((s,e)=>s+(Number(e.qty)||0),0);
+  const branches = new Set(ENTRIES.map(e=>e.branch)).size;
+  const flagged = ENTRIES.filter(e=> e.status!=='Working').length;
+
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi"><div class="lbl">Entries</div><div class="val">${ENTRIES.length}</div></div>
+    <div class="kpi"><div class="lbl">Branches</div><div class="val">${branches}</div></div>
+    <div class="kpi"><div class="lbl">Flagged</div><div class="val" style="color:${flagged?'var(--red)':'var(--teal)'}">${flagged}</div></div>
+  `;
+
+  const q = (document.getElementById('searchBox').value||'').toLowerCase();
+  const rows = ENTRIES.filter(e=>{
+    if(!q) return true;
+    return [e.branch,e.floor,e.room,e.category,e.name,e.make,e.serial].join(' ').toLowerCase().includes(q);
+  });
+
+  if(rows.length === 0){
+    document.getElementById('entriesList').innerHTML = `<div class="empty"><div class="big">No entries yet</div>Switch to the Add tab to log your first asset.</div>`;
+    return;
+  }
+
+  // group by branch, preserving the order branches first appear in
+  // (ENTRIES is newest-first, so the most recently active branch floats to top)
+  const groups = new Map();
+  rows.forEach(e=>{
+    if(!groups.has(e.branch)) groups.set(e.branch, []);
+    groups.get(e.branch).push(e);
+  });
+
+  let html = '';
+  for(const [branch, items] of groups){
+    const collapsed = COLLAPSED.has(branch);
+    const qty = items.reduce((s,e)=>s+(Number(e.qty)||0),0);
+    html += `<div class="branch-group">
+      <div class="branch-group-head" onclick="toggleBranchGroup('${encodeURIComponent(branch)}')">
+        <span class="chev">${collapsed?'▸':'▾'}</span>
+        <span class="entry-tag" style="margin:0;">${escapeHtml(branch)}</span>
+        <span class="branch-group-count">${items.length} item${items.length!==1?'s':''} · qty ${qty}</span>
+      </div>
+      ${collapsed ? '' : `<div class="branch-group-body">${items.map(e=>entryCardHtml(e,false)).join('')}</div>`}
+    </div>`;
+  }
+  document.getElementById('entriesList').innerHTML = html;
+}
+
+function deleteEntry(id){
+  if(!confirm('Delete this entry?')) return;
+  ENTRIES = ENTRIES.filter(e=> e.id !== id);
+  saveEntries();
+  refreshBranchList();
+  updateSyncBadge();
+  renderEntries();
+}
+
+document.getElementById('searchBox').addEventListener('input', renderEntries);
+
+/* ===== Export ===== */
+function getExportBranches(){
+  return [...new Set(ENTRIES.map(e=>e.branch))].sort();
+}
+
+function renderExportView(){
+  const sel = document.getElementById('exportBranchFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All branches</option>' +
+    getExportBranches().map(b=>`<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`).join('');
+  sel.value = cur;
+  updateExportCount();
+}
+
+function updateExportCount(){
+  const branch = document.getElementById('exportBranchFilter').value;
+  const rows = branch ? ENTRIES.filter(e=> e.branch === branch) : ENTRIES;
+  document.getElementById('exportCount').textContent = rows.length;
+}
+
+document.getElementById('exportBranchFilter').addEventListener('change', updateExportCount);
+
+function csvEscape(v){
+  v = String(v??'');
+  if(/[",\n]/.test(v)) return '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const branch = document.getElementById('exportBranchFilter').value;
+  const rows = branch ? ENTRIES.filter(e=> e.branch === branch) : ENTRIES;
+  if(rows.length === 0){ showToast('No entries to export for this filter', true); return; }
+  const headers = ['Branch','Floor','Room / Area','Asset Category','Asset Name','Make','Model','Serial No','Quantity','Status','Remarks','Global ID','Employee Name','Employee Phone','Processor','RAM (GB)','Storage (GB)','Storage Type','Keyboard Included','Mouse Included','NVR/DVR Storage','GPS Location'];
+  const lines = [headers.join(',')];
+  // export oldest-first so it reads naturally
+  [...rows].reverse().forEach(e=>{
+    const gps = (e.geoLat!=null && e.geoLng!=null) ? `${e.geoLat}, ${e.geoLng}` : '';
+    lines.push([e.branch,e.floor,e.room,e.category,e.name,e.make,e.model,e.serial,e.qty,e.status,e.remarks,e.globalId||'',e.empName||'',e.empPhone||'',e.processor||'',e.ramGb||'',e.storageGb||'',e.storageType||'',e.hasKeyboard?'1':'',e.hasMouse?'1':'',e.nvrStorage||'',gps].map(csvEscape).join(','));
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  const suffix = branch ? '_' + branch.replace(/[^a-zA-Z0-9]+/g,'-').slice(0,40) : '';
+  a.href = url; a.download = `assetline_collected_${stamp}${suffix}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exported');
+});
+
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  if(!confirm('This deletes every entry saved on this device. Export a CSV first if you need a copy. Continue?')) return;
+  ENTRIES = [];
+  saveEntries();
+  refreshBranchList();
+  updateSyncBadge();
+  showToast('All entries cleared');
+});
+
+/* ===== Toast ===== */
+let toastTimer;
+function showToast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? 'var(--red)' : 'var(--teal)';
+  t.style.color = isError ? '#3d1414' : '#0a2b24';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+/* ===== Sync badge (online/offline + count) ===== */
+function updateSyncBadge(){
+  const badge = document.getElementById('syncBadge');
+  badge.textContent = ENTRIES.length + ' entries';
+  if(!navigator.onLine){
+    badge.textContent += ' · offline';
+    badge.classList.add('offline');
+  } else {
+    badge.classList.remove('offline');
+  }
+}
+window.addEventListener('online', updateSyncBadge);
+window.addEventListener('offline', updateSyncBadge);
+
+/* ===== GPS (location stamp per entry) ===== */
+let GEO = null; // {lat, lng, acc}
+
+function updateGeoBadge(state){
+  const el = document.getElementById('geoBadge');
+  if(!el) return;
+  el.classList.remove('ok','warn');
+  if(state === 'ready'){
+    el.textContent = `📍 GPS ready (±${GEO.acc}m) — new entries will be location-stamped`;
+    el.classList.add('ok');
+  } else if(state === 'locating'){
+    el.textContent = '📍 Getting location…';
+  } else if(state === 'denied'){
+    el.textContent = '📍 Location permission denied — entries will save without GPS';
+    el.classList.add('warn');
+  } else {
+    el.textContent = '📍 GPS not available on this device/browser';
+    el.classList.add('warn');
+  }
+}
+
+function initGeo(){
+  if(!('geolocation' in navigator)){ updateGeoBadge('unsupported'); return; }
+  updateGeoBadge('locating');
+  navigator.geolocation.watchPosition(
+    (pos)=>{
+      GEO = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: Math.round(pos.coords.accuracy) };
+      updateGeoBadge('ready');
+    },
+    ()=>{ GEO = null; updateGeoBadge('denied'); },
+    { enableHighAccuracy: true, maximumAge: 20000, timeout: 20000 }
+  );
+}
+
+/* ===== Install prompt (Android/Chrome) ===== */
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+document.getElementById('installBtn').addEventListener('click', async ()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').classList.remove('show');
+});
+window.addEventListener('appinstalled', ()=>{
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+/* ===== Service worker (offline support) ===== */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+/* ===== Init ===== */
+initSelects();
+document.getElementById('floorList').innerHTML = FLOORS.map(f=>`<option value="${escapeHtml(f)}">`).join('');
+loadEntries();
+refreshBranchList();
+updateSyncBadge();
+initGeo();
+</script>
+</body>
+</html>
