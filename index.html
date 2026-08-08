@@ -145,6 +145,18 @@ textarea{ min-height:60px; resize:vertical; }
   position:absolute; inset:16% 10%; border:3px solid var(--amber); border-radius:14px;
   box-shadow:0 0 0 2000px rgba(0,0,0,0.35); pointer-events:none;
 }
+.scanner-laser{
+  position:absolute; left:10%; right:10%; top:16%; height:2px; z-index:2;
+  background:linear-gradient(90deg, transparent, #ff3b3b 15%, #ff3b3b 85%, transparent);
+  box-shadow:0 0 6px 2px rgba(255,59,59,0.75), 0 0 14px 4px rgba(255,59,59,0.35);
+  pointer-events:none;
+  animation: scannerLaserMove 1.7s ease-in-out infinite;
+}
+@keyframes scannerLaserMove{
+  0%   { top:17%; opacity:0.9; }
+  50%  { top:83%; opacity:0.9; }
+  100% { top:17%; opacity:0.9; }
+}
 
 .toast{
   position:fixed; left:16px; right:16px; bottom: calc(78px + env(safe-area-inset-bottom,0px));
@@ -414,6 +426,7 @@ nav.tabbar{
     <div class="scanner-video-wrap">
       <video id="barcodeVideo" autoplay playsinline muted></video>
       <div class="scanner-frame"></div>
+      <div class="scanner-laser"></div>
     </div>
     <div class="hint" id="barcodeStatus" style="padding:12px 16px; margin-top:0;">Position the barcode or QR code within the frame…</div>
   </div>
@@ -665,6 +678,13 @@ function openBarcodeScanner(mode){
   document.getElementById('scannerTitleText').textContent = scannerMode === 'batch' ? 'Scan Serials (batch)' : 'Scan Serial Number';
   modal.classList.add('active');
 
+  // prime the beep's audio context now, while still inside this tap's call stack —
+  // some mobile browsers block audio started later (e.g. from an async scan callback)
+  try{
+    if(!scanAudioCtx) scanAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(scanAudioCtx.state === 'suspended') scanAudioCtx.resume();
+  }catch(e){}
+
   if(!('BarcodeDetector' in window)){
     statusEl.textContent = 'Barcode scanning isn\'t supported in this browser. Please type the serial number manually, or open this app in Chrome on Android.';
     statusEl.style.color = 'var(--red)';
@@ -724,6 +744,25 @@ function getCroppedFrame(video){
   return scanCropCanvas;
 }
 
+let scanAudioCtx = null;
+function playBeep(){
+  try{
+    if(!scanAudioCtx) scanAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = scanAudioCtx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1046.5, ctx.currentTime); // a clean, short high beep
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.13);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.14);
+  }catch(e){ /* audio not available — scan still works silently */ }
+}
+
 function scanLoop(){
   const video = document.getElementById('barcodeVideo');
   if(!scannerDetector || !video || video.readyState < 2){
@@ -755,6 +794,7 @@ function scanLoop(){
           scannerBatchSeen.add(value);
           appendBatchSerial(value);
           scannerBatchCount++;
+          playBeep();
           statusEl.style.color = 'var(--teal)';
           statusEl.textContent = `Added "${value}" · ${scannerBatchCount} scanned so far — keep scanning or tap ✕ when done.`;
           showToast('Serial added: ' + value);
@@ -766,6 +806,7 @@ function scanLoop(){
           }, 900);
         } else {
           document.getElementById('fSerial').value = value;
+          playBeep();
           showToast('Serial scanned: ' + value);
           closeBarcodeScanner();
         }
