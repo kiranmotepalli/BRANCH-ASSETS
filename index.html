@@ -654,10 +654,12 @@ let scannerRAF = null;
 let scannerDetector = null;
 let scannerMode = 'single'; // 'single' fills Serial No and closes; 'batch' appends to the batch textarea and keeps scanning
 let scannerBatchCount = 0;
+let scannerBatchSeen = new Set(); // dedupes repeat scans of the same code within one batch session
 
 function openBarcodeScanner(mode){
   scannerMode = mode || 'single';
   scannerBatchCount = 0;
+  scannerBatchSeen = new Set();
   const modal = document.getElementById('barcodeModal');
   const statusEl = document.getElementById('barcodeStatus');
   document.getElementById('scannerTitleText').textContent = scannerMode === 'batch' ? 'Scan Serials (batch)' : 'Scan Serial Number';
@@ -671,8 +673,16 @@ function openBarcodeScanner(mode){
 
   statusEl.style.color = 'var(--text-faint)';
   statusEl.textContent = scannerMode === 'batch'
-    ? 'Position the first barcode within the frame — each scan adds a serial, keep going and tap ✕ when done.'
-    : 'Position the barcode or QR code within the frame…';
+    ? 'Center the first barcode fully inside the frame — only what\'s inside the box is scanned, so nearby codes are ignored. Each scan adds a serial, keep going and tap ✕ when done.'
+    : 'Center the barcode or QR code fully inside the frame — only what\'s inside the box is scanned.';
+
+  if(scannerMode === 'batch'){
+    // seed dedupe set with anything already in the textarea (typed, pasted, or from an earlier scan session)
+    const existing = document.getElementById('fSerialsBatch').value.trim();
+    if(existing){
+      existing.split(/[,\n]/).map(s=> s.trim()).filter(Boolean).forEach(s=> scannerBatchSeen.add(s));
+    }
+  }
 
   scannerDetector = new BarcodeDetector({
     formats: ['qr_code','code_128','code_39','ean_13','ean_8','upc_a','upc_e','codabar','itf','data_matrix']
@@ -691,20 +701,60 @@ function openBarcodeScanner(mode){
     });
 }
 
+let scanCropCanvas = null;
+let scanCropCtx = null;
+
+function getCroppedFrame(video){
+  // Only feed the detector the region inside the visible amber viewfinder
+  // (CSS .scanner-frame is inset 16% top/bottom, 10% left/right) so barcodes
+  // on neighboring items just outside the frame don't get picked up.
+  if(!scanCropCanvas){
+    scanCropCanvas = document.createElement('canvas');
+    scanCropCtx = scanCropCanvas.getContext('2d', { willReadFrequently: true });
+  }
+  const vw = video.videoWidth, vh = video.videoHeight;
+  if(!vw || !vh) return null;
+
+  const sx = vw * 0.10, sy = vh * 0.16;
+  const sw = vw * 0.80, sh = vh * 0.68;
+
+  scanCropCanvas.width = sw;
+  scanCropCanvas.height = sh;
+  scanCropCtx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
+  return scanCropCanvas;
+}
+
 function scanLoop(){
   const video = document.getElementById('barcodeVideo');
   if(!scannerDetector || !video || video.readyState < 2){
     scannerRAF = requestAnimationFrame(scanLoop);
     return;
   }
-  scannerDetector.detect(video)
+  const frame = getCroppedFrame(video);
+  if(!frame){
+    scannerRAF = requestAnimationFrame(scanLoop);
+    return;
+  }
+  scannerDetector.detect(frame)
     .then((codes)=>{
       if(codes && codes.length > 0){
         const value = codes[0].rawValue;
         if(scannerMode === 'batch'){
+          const statusEl = document.getElementById('barcodeStatus');
+          if(scannerBatchSeen.has(value)){
+            // same code still in frame (or scanned earlier this session) — don't add it again
+            statusEl.style.color = 'var(--text-faint)';
+            statusEl.textContent = `Already added "${value}" — move to the next item. ${scannerBatchCount} scanned so far.`;
+            setTimeout(()=>{
+              if(document.getElementById('barcodeModal').classList.contains('active')){
+                scannerRAF = requestAnimationFrame(scanLoop);
+              }
+            }, 500);
+            return;
+          }
+          scannerBatchSeen.add(value);
           appendBatchSerial(value);
           scannerBatchCount++;
-          const statusEl = document.getElementById('barcodeStatus');
           statusEl.style.color = 'var(--teal)';
           statusEl.textContent = `Added "${value}" · ${scannerBatchCount} scanned so far — keep scanning or tap ✕ when done.`;
           showToast('Serial added: ' + value);
